@@ -20,8 +20,6 @@ print(f"running bayesian SOM for number {target_number}")
 
 helper_function(target_number)
 
-exit(1)
-
 #np.set_printoptions(edgeitems=30, linewidth=100000, formatter=dict(float=lambda x: "%.3g" % x))
 np.set_printoptions(edgeitems=30, linewidth=100000)
 
@@ -53,8 +51,19 @@ print(f"Y.shape: {Y.shape}")
 print(f"X_test.shape: {X_test.shape}")
 print(f"Y_test.shape: {Y_test.shape}")
 
-for i in range(0, 10):
+key = ''
+i = 0
+while key != 'x':
+    print(f"image {i} was a: {Y[i]}")
+
+    if Y[i] != target_number:
+        i += 1
+        continue
+
+    print(f"displaying image {i}")
     print(X[i])
-    print(f"image was a: {Y[i]}")
+
     cv2.imshow("X[i]", X[i])
-    cv2.waitKey()
+    key = chr(cv2.waitKey(0))
+
+    i += 1
