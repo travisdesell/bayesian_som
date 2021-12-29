@@ -3,6 +3,25 @@ import requests, gzip, os, hashlib
 
 import cv2
 
+import sys
+from helper_directory.helper import helper_function
+
+print(sys.argv)
+
+for i in range(len(sys.argv)):
+    print(f"the {i}th argument is '{sys.argv[i]}'")
+
+if len(sys.argv) != 2:
+    print(f"ERROR: usage is python3 {sys.argv[0]} <number>")
+
+target_number = int(sys.argv[1])
+
+print(f"running bayesian SOM for number {target_number}")
+
+helper_function(target_number)
+
+exit(1)
+
 #np.set_printoptions(edgeitems=30, linewidth=100000, formatter=dict(float=lambda x: "%.3g" % x))
 np.set_printoptions(edgeitems=30, linewidth=100000)
 
