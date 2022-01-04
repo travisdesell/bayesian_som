@@ -4,6 +4,9 @@ import numpy as np
 import requests, gzip, os, hashlib
 
 import cv2
+import sys
+
+import matplotlib.pyplot as plt
 
 #np.set_printoptions(edgeitems=30, linewidth=100000, formatter=dict(float=lambda x: "%.3g" % x))
 np.set_printoptions(edgeitems=30, linewidth=100000)
@@ -31,6 +34,40 @@ Y = fetch("http://yann.lecun.com/exdb/mnist/train-labels-idx1-ubyte.gz")[8:]
 X_test = fetch("http://yann.lecun.com/exdb/mnist/t10k-images-idx3-ubyte.gz")[0x10:].reshape((-1, 28, 28))
 Y_test = fetch("http://yann.lecun.com/exdb/mnist/t10k-labels-idx1-ubyte.gz")[8:]
 
+def list_of_lists(n):
+    """n = number of empty lists you want in list"""
+    lofl=[]
+    for i in range(n):
+        lofl.append([]);
+    return lofl
+
+#Filter into bins for each label  
+X_list=list_of_lists(10)
+for i in range(len(X)):
+    if Y[i]==0:
+        X_list[0].append(X[i])
+    if Y[i]==1:
+        X_list[1].append(X[i])
+    if Y[i]==2:
+        X_list[2].append(X[i])
+    if Y[i]==3:
+        X_list[3].append(X[i])
+    if Y[i]==4:
+        X_list[4].append(X[i])
+    if Y[i]==5:
+        X_list[5].append(X[i])
+    if Y[i]==6:
+        X_list[6].append(X[i])
+    if Y[i]==7:
+        X_list[7].append(X[i])
+    if Y[i]==8:
+        X_list[8].append(X[i])
+    if Y[i]==9:
+        X_list[9].append(X[i])
+        
+#these are the list of labels given at the command line
+label_list=sys.argv[1:len(sys.argv)]
+
 #goal here is to create a sampling dristribution for each pixel, and due to the central limit theorem these distributions will #converge on normal.  Then using the 50th percentile of each sampling distribution to estimate the mean, we create a mean
 #vector and calculate the covariance matrix between each pixels sampling distribution.  We then use this mean vector and 
 #covariance matrix to define a multivariate normal distribution to sample from, and reconstruct the image matrix of 28X28 #pixels
@@ -40,13 +77,6 @@ Y_test = fetch("http://yann.lecun.com/exdb/mnist/t10k-labels-idx1-ubyte.gz")[8:]
 #FURTHER PLANS
 #Instead of a single sample being taken from the mulivariate distribution, many samples should be taken and then averaged to 
 #see if the image becomes clearer
-
-def list_of_lists(n):
-    """n = number of empty lists you want in list"""
-    lofl=[]
-    for i in range(n):
-        lofl.append([]);
-    return lofl
 
 def pixel_list_creator(X):
     """takes all the images and creates 1d arrays of each pixel"""
@@ -113,8 +143,47 @@ def multivariate_sample(mu,covariance):
     x=np.reshape(x,(28,28))
     return x
 
-test=mean_cov(X,100)
-mu=test[0]
-covariance=test[1]
-final=multivariate_sample(mu, covariance)
-print(final)
+def final_xbar(mu, covariance, sample_size):
+    """repeatedly samples defined multivariate normal distribution and provides mean of all samples"""
+    test=multivariate_sample(mu,covariance)
+    for i in range(sample_size):
+        x = multivariate_sample(mu,covariance)
+        test=test+x
+    test=test/(sample_size+1)
+    test=np.rint(test)
+    test=test.astype(int)
+    return test
+
+
+def create_image_list(label_list):
+    """this will create a list of 10 images for each label provided on the command line"""
+    image_list=[]
+    for i in range(len(label_list)):
+        label=label_list[i]
+        data=X_list[int(label)]
+        test=mean_cov(data,100)
+        mu=test[0]
+        covariance=test[1]
+        for j in range(10):
+            image=multivariate_sample(mu,covariance)
+            image_list.append(image)
+    return image_list
+
+def display_save_labels(label_list):
+    """displays a grid of 2X5 images for each label in image_list"""
+    """will also save png file bayesian_som.png in pwd for better viewing"""
+    image_list=create_image_list(label_list)
+    num_row = 2 * len(label_list)
+    num_col = 5 
+    fig, axes = plt.subplots(num_row, num_col, figsize=(1.5*num_col,2*num_row))
+    for i in range(len(image_list)):
+        ax = axes[i//num_col, i%num_col]
+        ax.imshow(image_list[i], cmap='gray')
+    plt.tight_layout()
+    plt.savefig("bayesian_som")
+    plt.show()
+
+
+    
+#will display the figure and save it to present working directory
+display_save_labels(label_list)
