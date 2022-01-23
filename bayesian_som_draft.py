@@ -118,9 +118,16 @@ def mean_vector(arr_list):
     mu=np.array(mu)
     return mu
 
+def mean_vector_simple(arr_list):
+    mu=[]
+    for i in range(len(arr_list)):
+        mu.append(np.mean(arr_list[i]))
+    mu=np.array(mu)
+    return mu
+
 def cov_matrix(arr_list):
     """returns the covariance matrix between pixel sampling dristributions"""
-    arr_list = [np.sort(x) for x in arr_list]
+   # arr_list = [np.sort(x) for x in arr_list]
     x = np.vstack([arr_list])
     cov=np.cov(x)
     return cov
@@ -156,7 +163,7 @@ def final_xbar(mu, covariance, sample_size):
 
 
 def create_image_list(label_list):
-    """this will create a list of 10 images for each label provided on the command line"""
+    """this will create a list of lists of n_images for each label provided on the command line"""
     image_list=[]
     for i in range(len(label_list)):
         label=label_list[i]
@@ -168,6 +175,47 @@ def create_image_list(label_list):
             image=multivariate_sample(mu,covariance)
             image_list.append(image)
     return image_list
+
+def create_simple_image_list(label_list):
+    image_list=[]
+    for i in range(len(label_list)):
+        label=label_list[i]
+        data=X_list[int(label)]
+        pixel_list=pixel_list_creator(data)
+        mu=mean_vector_simple(pixel_list)
+        covariance=cov_matrix(pixel_list)
+        for j in range(10):
+            image=multivariate_sample(mu,covariance)
+            image_list.append(image)
+    return image_list    
+
+def create_image_LISTS(label_list):
+    """this will create a list of lists of n_images for each label provided on the command line"""
+    image_lists=list_of_lists(len(label_list))
+    for i in range(len(label_list)):
+        label=label_list[i]
+        data=X_list[int(label)]
+        test=mean_cov(data,100)
+        mu=test[0]
+        covariance=test[1]
+        for j in range(100):
+            image=multivariate_sample(mu,covariance)
+            image_lists[i].append(image)
+    return image_lists
+
+def create_simple_image_LISTS(label_list):
+    image_lists=list_of_lists(len(label_list))
+    for i in range(len(label_list)):
+        label=label_list[i]
+        data=X_list[int(label)]
+        pixel_list=pixel_list_creator(data)
+        mu=mean_vector_simple(pixel_list)
+        covariance=cov_matrix(pixel_list)
+        for j in range(100):
+            image=multivariate_sample(mu,covariance)
+            image_lists[i].append(image)
+    return image_lists
+    
 
 def display_save_labels(label_list):
     """displays a grid of 2X5 images for each label in image_list"""
@@ -183,7 +231,106 @@ def display_save_labels(label_list):
     plt.savefig("bayesian_som")
     plt.show()
 
+def display_save_labels_simple(label_list):
+    image_list=create_simple_image_list(label_list)
+    num_row = 2 * len(label_list)
+    num_col = 5 
+    fig, axes = plt.subplots(num_row, num_col, figsize=(1.5*num_col,2*num_row))
+    for i in range(len(image_list)):
+        ax = axes[i//num_col, i%num_col]
+        ax.imshow(image_list[i], cmap='gray')
+    plt.tight_layout()
+    plt.savefig("bayesian_som_simple")
+    plt.show()   
 
+def  display_save_difference(label_list=[x for x in range(10)]): 
+    """this function will create first create multivariate distributions for each label"""
+    """on the label list.  It will then sample each distribution 100 times and build a list"""
+    """of every pairwise difference for a given label.  It will then take the average"""
+    """for each pixel and then print out the overall difference between images in matrix form"""
+   
+    #this will give you a list of lists, one for each label, each list containing 100 samples from labels multivariate normal dist 
+    image_lists = create_image_LISTS(label_list)
+    difference_lists=list_of_lists(len(label_list))
+    for i in range(len(label_list)):
+        for j in range(len(image_lists[i])-1):
+            for k in range(j+1,len(image_lists[i])):
+                difference=image_lists[i][k] - image_lists[i][j]
+                difference=np.abs(difference)
+                difference_lists[i].append(difference)
+    difference_means=[]
+    for i in range(len(difference_lists)):
+        pixel_means=[]
+        test=pixel_list_creator(difference_lists[i])
+        for j in range(len(test)):
+            x=np.mean(np.array(test[j]))
+            pixel_means.append(x)
+        pixel_means=np.rint(pixel_means)
+        pixel_means=pixel_means.astype(int)
+        pixel_means=np.reshape(pixel_means,(28,28))
+        difference_means.append(pixel_means) 
+    num_row = 2
+    num_col = 5# plot images
+    fig, axes = plt.subplots(num_row, num_col, figsize=(1.5*num_col,2*num_row))
+    for i in range(len(difference_means)):
+        ax = axes[i//num_col, i%num_col]
+        ax.imshow(difference_means[i], cmap='gray')
+    plt.tight_layout()
+    plt.savefig("bayesian_som_differences")
+    plt.show()        
+
+def  display_save_simple_difference(label_list=[x for x in range(10)]): 
+    image_lists = create_simple_image_LISTS(label_list)
+    difference_lists=list_of_lists(len(label_list))
+    for i in range(len(label_list)):
+        for j in range(len(image_lists[i])-1):
+            for k in range(j+1,len(image_lists[i])):
+                difference=image_lists[i][k] - image_lists[i][j]
+                difference=np.abs(difference)
+                difference_lists[i].append(difference)
+    difference_means=[]
+    for i in range(len(difference_lists)):
+        pixel_means=[]
+        test=pixel_list_creator(difference_lists[i])
+        for j in range(len(test)):
+            x=np.mean(np.array(test[j]))
+            pixel_means.append(x)
+        pixel_means=np.rint(pixel_means)
+        pixel_means=pixel_means.astype(int)
+        pixel_means=np.reshape(pixel_means,(28,28))
+        difference_means.append(pixel_means) 
+    num_row = 2 
+    num_col = 5# plot images
+    fig, axes = plt.subplots(num_row, num_col, figsize=(1.5*num_col,2*num_row))
+    for i in range(len(difference_means)):
+        ax = axes[i//num_col, i%num_col]
+        ax.imshow(difference_means[i], cmap='gray')
+    plt.tight_layout()
+    plt.savefig("bayesian_som_simple_differences")
+    plt.show() 
+
+def running_covariance(label_list):
+    #first loop through label list
+    for label in label_list:
+        image_list=X_list[int(label)]
+        #this will help limit pictures to 100ish
+        modulo=int(len(image)list/100) 
+        #initiate pixel list with the first image
+        running_pixel_list=pixel_list_creator([image_list[0]])
+        #make pixel list for each image and concat to running_pixel_list
+        for image in image_list:
+            image_for_print=[]
+            pixel_list=pixel_list_creator([image])
+            running_pixel_list = np.concatenate((running_pixel_list,pixel_list), axis=1)
+            #this condition will only calculate cov and mean so that about
+            #100 picks are printed out in the end
+            if (len(running_pixel_list[0]) % modulo == 0)):
+                
+      #figure out how to limit printouts 
+                
+                
+            
+        
+        
     
-#will display the figure and save it to present working directory
-display_save_labels(label_list)
+
